@@ -37,6 +37,24 @@ if test "$TARGET" = "local"
     echo "✅ Docker Compose found"
     echo ""
     
+    # Check Docker permissions
+    if not docker ps &> /dev/null
+        echo "⚠️  Docker requires group membership to run without sudo"
+        echo ""
+        read -P "Add $USER to docker group? (requires sudo) [y/N]: " confirm
+        if test "$confirm" = "y"
+            sudo usermod -aG docker $USER
+            echo ""
+            echo "✅ Added to docker group!"
+            echo "⚠️  You must log out and back in (or restart) for this to take effect."
+            echo "   Then run ./deploy.sh local again"
+            exit 0
+        else
+            echo "❌ Cannot proceed without Docker access"
+            exit 1
+        end
+    end
+    
     # Setup .env if doesn't exist
     if not test -f .env
         echo "⚙️  Creating .env file..."
@@ -82,9 +100,9 @@ if test "$TARGET" = "local"
     echo ""
     echo "Commands:"
     echo "  projectarium status   # Check status"
-    echo "  projectarium logs     # View logs"
-    echo "  projectarium down     # Stop service"
-    echo "  projectarium reset    # Wipe database and restart"
+    echo "  make docker-logs    # View logs"
+    echo "  make docker-down    # Stop service  "
+    echo "  make docker-reset   # Wipe database and restart"
     echo ""
     echo "To configure TUI:"
     echo "  pj-tui config local"

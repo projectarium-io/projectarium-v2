@@ -6,27 +6,25 @@ Multi-device project and todo tracker with PostgreSQL backend and Go REST API.
 
 ## Quick Start
 
-### First Time Setup
+```bash
+./deploy.sh local
+```
 
-1. **Install Development Tools**
-   ```bash
-   make install-tools    # Installs golangci-lint, air
-   make install-hooks    # Sets up git pre-commit hooks
-   ```
+That's it. The API will be running on `http://localhost:8888`.
 
-2. **Setup Database**
-   ```bash
-   make db-setup
-   ```
+For remote deployment:
+```bash
+./deploy.sh user@192.168.1.100
+```
 
-3. **Run the API**
-   ```bash
-   make dev              # Run with hot reload (recommended)
-   # OR
-   make run              # Run without hot reload
-   ```
+## Development
 
-The API will be available at `http://localhost:8888`
+For local development instead:
+```bash
+make install-tools    # Install golangci-lint, air
+make db-setup         # Setup PostgreSQL
+make dev              # Run with hot reload
+```
 
 ### Development Workflow
 
