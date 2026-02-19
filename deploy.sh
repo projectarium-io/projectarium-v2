@@ -64,44 +64,16 @@ if test "$TARGET" = "local"
     # Start containers
     echo "🐳 Starting Docker containers..."
     docker compose up -d
-
-    # Install CLI locally
-    echo "🔧 Installing projectarium CLI..."
-    mkdir -p ~/bin
-    cp projectarium ~/bin/projectarium
-    chmod +x ~/bin/projectarium
-    
-    # Add ~/bin to PATH if not already there
-    if not string match -q "*$HOME/bin*" $PATH
-        echo "⚙️  Adding ~/bin to PATH..."
-        
-        # Add to fish config
-        if test -f ~/.config/fish/config.fish
-            if not grep -q "set -gx PATH \$HOME/bin \$PATH" ~/.config/fish/config.fish
-                echo 'set -gx PATH $HOME/bin $PATH' >> ~/.config/fish/config.fish
-            end
-        else
-            mkdir -p ~/.config/fish
-            echo 'set -gx PATH $HOME/bin $PATH' >> ~/.config/fish/config.fish
-        end
-        
-        # Add to current session
-        set -gx PATH $HOME/bin $PATH
-        echo "✅ Added ~/bin to PATH"
-    else
-        echo "✅ ~/bin already in PATH"
-    end
     
     echo ""
     echo "✅ Local deployment complete!"
-    echo "✅ CLI installed to ~/bin/projectarium"
     echo ""
     echo "The API is now running on http://localhost:8888"
     echo ""
-    echo "Commands:"
-    echo "  projectarium status   # Check status"
+    echo "Management commands:"
     echo "  make docker-logs    # View logs"
-    echo "  make docker-down    # Stop service  "
+    echo "  make docker-down    # Stop service"
+    echo "  make docker-up      # Start service"
     echo "  make docker-reset   # Wipe database and restart"
     echo ""
     echo "To configure TUI:"
@@ -152,27 +124,6 @@ ssh $REMOTE 'bash -c "
     else
         echo \"✅ Docker Compose found\"
     fi
-    
-    # Ensure ~/bin exists and is in PATH
-    mkdir -p ~/bin
-    
-    # Add to PATH only if not already there
-    if [[ \":\$PATH:\" != *\":\$HOME/bin:\"* ]]; then
-        # Check if already in bashrc to avoid duplicates
-        if ! grep -q 'export PATH=\"\$HOME/bin:\$PATH\"' ~/.bashrc 2>/dev/null; then
-            echo 'export PATH=\"\$HOME/bin:\$PATH\"' >> ~/.bashrc
-        fi
-        
-        # Check if already in fish config to avoid duplicates  
-        if ! grep -q 'set -gx PATH \$HOME/bin \$PATH' ~/.config/fish/config.fish 2>/dev/null; then
-            mkdir -p ~/.config/fish
-            echo 'set -gx PATH \$HOME/bin \$PATH' >> ~/.config/fish/config.fish
-        fi
-        
-        echo \"✅ Added ~/bin to PATH (restart shell to apply)\"
-    else
-        echo \"✅ ~/bin already in PATH\"
-    fi
 "'
 
 if test $status -ne 0
@@ -190,6 +141,7 @@ scp -r \
     Dockerfile \
     .dockerignore \
     .env.example \
+    Makefile \
     go.mod \
     go.sum \
     cmd/ \
@@ -198,11 +150,6 @@ scp -r \
     scripts/ \
     projectarium.service \
     $REMOTE:$REMOTE_DIR/
-
-# Copy projectarium CLI
-echo "🔧 Installing projectarium CLI on remote..."
-scp projectarium $REMOTE:~/bin/projectarium
-ssh $REMOTE "chmod +x ~/bin/projectarium"
 
 # Setup .env
 echo "⚙️  Setting up environment..."
@@ -221,17 +168,12 @@ echo "✅ Deployment complete!"
 echo ""
 echo "The API is now running on $REMOTE:8888"
 echo "✅ Auto-start on boot is enabled"
-echo "✅ CLI installed to ~/bin/projectarium"
 echo ""
-echo "⚠️  You may need to restart your shell or run:"
-echo "    source ~/.bashrc  # or"
-echo "    exec fish"
-echo ""
-echo "Remote commands:"
-echo "  ssh $REMOTE 'projectarium status'  # Check status"
-echo "  ssh $REMOTE 'projectarium logs'    # View logs"
-echo "  ssh $REMOTE 'projectarium down'    # Stop service"
-echo "  ssh $REMOTE 'projectarium restart' # Restart service"
+echo "Management commands:"
+echo "  ssh $REMOTE 'cd ~/projectarium && make docker-logs'   # View logs"
+echo "  ssh $REMOTE 'cd ~/projectarium && make docker-down'   # Stop service"
+echo "  ssh $REMOTE 'cd ~/projectarium && make docker-up'     # Start service"
+echo "  ssh $REMOTE 'cd ~/projectarium && make docker-reset'  # Wipe & restart"
 echo ""
 echo "To configure TUI:"
 echo "  pj-tui config set "(string replace -r '^.*@' '' $REMOTE)
