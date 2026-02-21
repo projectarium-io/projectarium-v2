@@ -36,13 +36,13 @@ func main() {
 
 	// Project routes
 	mux.HandleFunc("GET /api/projects", h.GetProjects)
+	mux.HandleFunc("PUT /api/projects/reorder", h.ReorderProjects) // Must come before {id} routes
 	mux.HandleFunc("GET /api/projects/{id}", h.GetProject)
 	mux.HandleFunc("POST /api/projects", h.CreateProject)
 	mux.HandleFunc("PUT /api/projects/{id}", h.UpdateProject)
 	mux.HandleFunc("DELETE /api/projects/{id}", h.DeleteProject)
 	mux.HandleFunc("PATCH /api/projects/{id}/status", h.UpdateProjectStatus)
 	mux.HandleFunc("PATCH /api/projects/{id}/priority", h.UpdateProjectPriority)
-	mux.HandleFunc("PUT /api/projects/reorder", h.ReorderProjects)
 
 	// Todo routes
 	mux.HandleFunc("GET /api/todos", h.GetTodos)
