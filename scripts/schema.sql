@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS projects (
     file TEXT,
     priority INTEGER DEFAULT 0,
     status TEXT NOT NULL,
-    language TEXT
+    language TEXT,
+    position INTEGER DEFAULT 0
 );
 
 -- Create the 'todo' table (if it doesn't exist)
@@ -24,5 +25,6 @@ CREATE TABLE IF NOT EXISTS todo (
 -- Create indexes for better query performance (if they don't exist)
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_priority ON projects(priority);
+CREATE INDEX IF NOT EXISTS idx_projects_position ON projects(position);
 CREATE INDEX IF NOT EXISTS idx_todo_project_id ON todo(project_id);
 CREATE INDEX IF NOT EXISTS idx_todo_deleted ON todo(deleted);

@@ -223,12 +223,13 @@ func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Validate status
 	validStatuses := map[string]bool{
-		"ready":       true,
-		"in_progress": true,
-		"finished":    true,
+		"abandoned": true,
+		"backlog":   true,
+		"active":    true,
+		"completed": true,
 	}
 	if !validStatuses[payload.Status] {
-		http.Error(w, "Invalid status. Must be: ready, in_progress, or finished", http.StatusBadRequest)
+		http.Error(w, "Invalid status. Must be: abandoned, backlog, active, or completed", http.StatusBadRequest)
 		return
 	}
 
@@ -282,6 +283,45 @@ func (h *Handler) UpdateProjectPriority(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondJSON(w, http.StatusOK, project)
+}
+
+// ReorderProjects updates the order of projects within columns
+func (h *Handler) ReorderProjects(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Order map[string][]int `json:"order"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate statuses
+	validStatuses := map[string]bool{
+		"abandoned": true,
+		"backlog":   true,
+		"active":    true,
+		"completed": true,
+	}
+	for status := range payload.Order {
+		if !validStatuses[status] {
+			http.Error(w, "Invalid status: "+status, http.StatusBadRequest)
+			return
+		}
+	}
+
+	if err := h.projectRepo.ReorderProjects(payload.Order); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated projects list
+	projects, err := h.projectRepo.GetAll()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, projects)
 }
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {

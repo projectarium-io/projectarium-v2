@@ -9,4 +9,5 @@ type Project struct {
 	Priority    int    `json:"priority"`
 	Status      string `json:"status"`
 	Language    string `json:"language"`
+	Position    int    `json:"position"`
 }

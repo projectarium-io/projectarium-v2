@@ -16,9 +16,9 @@ func NewProjectRepository(db *sql.DB) *ProjectRepository {
 
 func (r *ProjectRepository) GetAll() ([]models.Project, error) {
 	rows, err := r.db.Query(`
-		SELECT id, name, description, path, file, priority, status, language
+		SELECT id, name, description, path, file, priority, status, language, position
 		FROM projects
-		ORDER BY priority DESC, name
+		ORDER BY status, position, priority DESC, name
 	`)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (r *ProjectRepository) GetAll() ([]models.Project, error) {
 	var projects []models.Project
 	for rows.Next() {
 		var p models.Project
-		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language)
+		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language, &p.Position)
 		if err != nil {
 			return nil, err
 		}
@@ -40,10 +40,10 @@ func (r *ProjectRepository) GetAll() ([]models.Project, error) {
 func (r *ProjectRepository) GetByID(id int) (*models.Project, error) {
 	var p models.Project
 	err := r.db.QueryRow(`
-		SELECT id, name, description, path, file, priority, status, language
+		SELECT id, name, description, path, file, priority, status, language, position
 		FROM projects
 		WHERE id = $1
-	`, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language)
+	`, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language, &p.Position)
 	if err != nil {
 		return nil, err
 	}
@@ -52,18 +52,18 @@ func (r *ProjectRepository) GetByID(id int) (*models.Project, error) {
 
 func (r *ProjectRepository) Create(p *models.Project) error {
 	return r.db.QueryRow(`
-		INSERT INTO projects (name, description, path, file, priority, status, language)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO projects (name, description, path, file, priority, status, language, position)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
-	`, p.Name, p.Description, p.Path, p.File, p.Priority, p.Status, p.Language).Scan(&p.ID)
+	`, p.Name, p.Description, p.Path, p.File, p.Priority, p.Status, p.Language, p.Position).Scan(&p.ID)
 }
 
 func (r *ProjectRepository) Update(p *models.Project) error {
 	_, err := r.db.Exec(`
 		UPDATE projects
-		SET name = $1, description = $2, path = $3, file = $4, priority = $5, status = $6, language = $7
-		WHERE id = $8
-	`, p.Name, p.Description, p.Path, p.File, p.Priority, p.Status, p.Language, p.ID)
+		SET name = $1, description = $2, path = $3, file = $4, priority = $5, status = $6, language = $7, position = $8
+		WHERE id = $9
+	`, p.Name, p.Description, p.Path, p.File, p.Priority, p.Status, p.Language, p.Position, p.ID)
 	return err
 }
 
@@ -78,8 +78,8 @@ func (r *ProjectRepository) UpdateStatus(id int, status string) (*models.Project
 		UPDATE projects
 		SET status = $1
 		WHERE id = $2
-		RETURNING id, name, description, path, file, priority, status, language
-	`, status, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language)
+		RETURNING id, name, description, path, file, priority, status, language, position
+	`, status, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language, &p.Position)
 	if err != nil {
 		return nil, err
 	}
@@ -92,10 +92,37 @@ func (r *ProjectRepository) UpdatePriority(id int, priority int) (*models.Projec
 		UPDATE projects
 		SET priority = $1
 		WHERE id = $2
-		RETURNING id, name, description, path, file, priority, status, language
-	`, priority, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language)
+		RETURNING id, name, description, path, file, priority, status, language, position
+	`, priority, id).Scan(&p.ID, &p.Name, &p.Description, &p.Path, &p.File, &p.Priority, &p.Status, &p.Language, &p.Position)
 	if err != nil {
 		return nil, err
 	}
 	return &p, nil
+}
+
+// ReorderProjects updates the position of multiple projects in a single transaction
+// The order map contains status -> []projectID where the array index is the new position
+func (r *ProjectRepository) ReorderProjects(order map[string][]int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`UPDATE projects SET status = $1, position = $2 WHERE id = $3`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for status, projectIDs := range order {
+		for position, projectID := range projectIDs {
+			_, err := stmt.Exec(status, position, projectID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }
