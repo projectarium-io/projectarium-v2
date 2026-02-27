@@ -10,7 +10,6 @@ env:
 
 jobs:
   setup:
-    name: AWS → EC2
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -25,10 +24,12 @@ jobs:
 
       - name: 🏗️ Create OIDC provider and IAM role
         run: |
+          # Create OIDC provider
           aws iam create-open-id-connect-provider \
             --url https://token.actions.githubusercontent.com \
             --client-id-list sts.amazonaws.com || echo "OIDC provider already exists"
 
+          # Create IAM role
           aws iam create-role --role-name GitHub-ECR-Deploy \
             --assume-role-policy-document '{
               "Version": "2012-10-17",
@@ -40,6 +41,7 @@ jobs:
               }]
             }' || echo "Role already exists"
 
+          # Attach ECR policy
           aws iam attach-role-policy \
             --role-name GitHub-ECR-Deploy \
             --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess || echo "Policy already attached"
@@ -53,12 +55,18 @@ jobs:
           script: |
             sudo adduser --disabled-password --gecos '' projectarium || echo 'User already exists'
             sudo usermod -aG docker projectarium
+
+            # Copy SSH key to projectarium user
             sudo mkdir -p /home/projectarium/.ssh
             sudo cp ~/.ssh/authorized_keys /home/projectarium/.ssh/
             sudo chown -R projectarium:projectarium /home/projectarium/.ssh
 
+            # Install AWS CLI if not present
             if ! command -v aws &> /dev/null; then
               sudo apt update && sudo apt install -y unzip
               curl -s 'https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip' -o awscliv2.zip
               unzip -q awscliv2.zip && sudo ./aws/install && rm -rf aws awscliv2.zip
             fi
+
+            echo 'EC2 setup complete'
+          "
