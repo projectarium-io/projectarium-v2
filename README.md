@@ -4,7 +4,7 @@ A portable project kanban board display, hosted on a dedicated device and access
 
 Multi-device project and todo tracker with PostgreSQL backend and Go REST API.
 
-## Quick Start - outdated
+## Quick Start
 
 ```bash
 ./deploy.sh local
