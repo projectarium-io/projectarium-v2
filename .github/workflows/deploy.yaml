@@ -51,5 +51,8 @@ jobs:
           script: |
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
             docker pull $ECR_REPO:latest
-            docker stop projectarium-v2 2>/dev/null; docker rm projectarium-v2 2>/dev/null; true
+            # Kill any container currently using port 8888
+            docker ps -q --filter "publish=8888" | xargs -r docker rm -f
+            # Also ensure the named container is gone
+            docker rm -f projectarium-v2 2>/dev/null || true
             docker run -d --name projectarium-v2 -p 8888:8888 --restart unless-stopped $ECR_REPO:latest
