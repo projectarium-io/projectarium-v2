@@ -1,7 +1,6 @@
 Projectarium PWA Roadmap:
 
 
-
 Phase 1 (Months 1-3): Start Simple
 Option 1: All-EC2
 
