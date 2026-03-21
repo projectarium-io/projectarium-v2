@@ -4,6 +4,6 @@ type Todo struct {
 	ID          int    `json:"id"`
 	Description string `json:"description"`
 	Priority    int    `json:"priority"`
-	Deleted     bool   `json:"deleted"`
+	Checked     bool   `json:"checked"`
 	ProjectID   *int   `json:"project_id"`
 }

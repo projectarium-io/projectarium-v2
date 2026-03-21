@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     description TEXT CHECK(LENGTH(description) <= 29),
-    path TEXT NOT NULL,
+    path TEXT,
     file TEXT,
     priority INTEGER DEFAULT 0,
     status TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS todo (
     id SERIAL PRIMARY KEY,
     description TEXT NOT NULL,
     priority INTEGER DEFAULT 0,
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    checked BOOLEAN NOT NULL DEFAULT FALSE,
     project_id INTEGER,
     FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
 );
@@ -27,4 +27,4 @@ CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_priority ON projects(priority);
 CREATE INDEX IF NOT EXISTS idx_projects_position ON projects(position);
 CREATE INDEX IF NOT EXISTS idx_todo_project_id ON todo(project_id);
-CREATE INDEX IF NOT EXISTS idx_todo_deleted ON todo(deleted);
+CREATE INDEX IF NOT EXISTS idx_todo_checked ON todo(checked);

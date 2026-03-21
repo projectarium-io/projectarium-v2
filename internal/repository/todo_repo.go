@@ -16,9 +16,9 @@ func NewTodoRepository(db *sql.DB) *TodoRepository {
 
 func (r *TodoRepository) GetAll() ([]models.Todo, error) {
 	rows, err := r.db.Query(`
-		SELECT id, description, priority, deleted, project_id
+		SELECT id, description, priority, checked, project_id
 		FROM todo
-		WHERE deleted = FALSE
+		WHERE checked = FALSE
 		ORDER BY id
 	`)
 	if err != nil {
@@ -29,7 +29,7 @@ func (r *TodoRepository) GetAll() ([]models.Todo, error) {
 	var todos []models.Todo
 	for rows.Next() {
 		var t models.Todo
-		err := rows.Scan(&t.ID, &t.Description, &t.Priority, &t.Deleted, &t.ProjectID)
+		err := rows.Scan(&t.ID, &t.Description, &t.Priority, &t.Checked, &t.ProjectID)
 		if err != nil {
 			return nil, err
 		}
@@ -41,10 +41,10 @@ func (r *TodoRepository) GetAll() ([]models.Todo, error) {
 func (r *TodoRepository) GetByID(id int) (*models.Todo, error) {
 	var t models.Todo
 	err := r.db.QueryRow(`
-		SELECT id, description, priority, deleted, project_id
+		SELECT id, description, priority, checked, project_id
 		FROM todo
 		WHERE id = $1
-	`, id).Scan(&t.ID, &t.Description, &t.Priority, &t.Deleted, &t.ProjectID)
+	`, id).Scan(&t.ID, &t.Description, &t.Priority, &t.Checked, &t.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,31 +53,31 @@ func (r *TodoRepository) GetByID(id int) (*models.Todo, error) {
 
 func (r *TodoRepository) Create(t *models.Todo) error {
 	return r.db.QueryRow(`
-		INSERT INTO todo (description, priority, deleted, project_id)
+		INSERT INTO todo (description, priority, checked, project_id)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
-	`, t.Description, t.Priority, t.Deleted, t.ProjectID).Scan(&t.ID)
+	`, t.Description, t.Priority, t.Checked, t.ProjectID).Scan(&t.ID)
 }
 
 func (r *TodoRepository) Update(t *models.Todo) error {
 	_, err := r.db.Exec(`
 		UPDATE todo
-		SET description = $1, priority = $2, deleted = $3, project_id = $4
+		SET description = $1, priority = $2, checked = $3, project_id = $4
 		WHERE id = $5
-	`, t.Description, t.Priority, t.Deleted, t.ProjectID, t.ID)
+	`, t.Description, t.Priority, t.Checked, t.ProjectID, t.ID)
 	return err
 }
 
 func (r *TodoRepository) Delete(id int) error {
-	_, err := r.db.Exec("UPDATE todo SET deleted = TRUE WHERE id = $1", id)
+	_, err := r.db.Exec("UPDATE todo SET checked = TRUE WHERE id = $1", id)
 	return err
 }
 
 func (r *TodoRepository) GetByProjectID(projectID int) ([]models.Todo, error) {
 	rows, err := r.db.Query(`
-		SELECT id, description, priority, deleted, project_id
+		SELECT id, description, priority, checked, project_id
 		FROM todo
-		WHERE project_id = $1 AND deleted = FALSE
+		WHERE project_id = $1 AND checked = FALSE
 		ORDER BY priority DESC, id
 	`, projectID)
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *TodoRepository) GetByProjectID(projectID int) ([]models.Todo, error) {
 	var todos []models.Todo
 	for rows.Next() {
 		var t models.Todo
-		err := rows.Scan(&t.ID, &t.Description, &t.Priority, &t.Deleted, &t.ProjectID)
+		err := rows.Scan(&t.ID, &t.Description, &t.Priority, &t.Checked, &t.ProjectID)
 		if err != nil {
 			return nil, err
 		}
